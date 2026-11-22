@@ -1,4 +1,4 @@
-name: Alertes Solaires Push
+name: Alertes Solaires Pushname: Alertes Solaires Push
 on:
   schedule:
     - cron: '*/30 * * * *'
@@ -24,3 +24,27 @@ jobs:
 
 http://googleusercontent.com/lmdx_content/hczySiZrSbgGeQrvfWEIwfLwcwQaXIfitJcpKydywgbrVyEzNbTuJJNexzsszLdwTjwDDnUWTPNLSPeOoxEUdIesCujjgFHPYnUKFIsQSJJOVfrnIzeWADHrEVYCGMrMtuOAjCWQNoMOgESDQMxEGseckYecCyBxRZCggXTbZYEvQUWGDDJoKbJOxJkwCDGmwWDmGcJPjwjbiuWiBlusgRqdBIQOcpTipSqjOzTKFNFfYYyZWxszrlwEDRsdjoRpKLhVriGXBrNLtxVMZhElpFSJnEMPwGtgubaVSUeJoLFIDTRlTXMsXxqHcMxrpikgzKtnzbaiutrKKGbPVMdqwagIkwwLCAZdBrJpPCWbotezPBWqKvCtsJQBqtEIUxsGRStoXNSqElUOURmendJonvafDTkBvTIXvamUylFGXWDoKYCtyImZLEFhISPQyPYkTCn244077
 
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+jobs:
+  check-solar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node alerte.js
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          WINDOW_WATTS: ${{ vars.WINDOW_WATTS || secrets.WINDOW_WATTS || '500' }}
+          PUSH_WATTS: ${{ vars.PUSH_WATTS || secrets.PUSH_WATTS || '800' }}
+          MORNING_PUSH_TIME: ${{ vars.MORNING_PUSH_TIME || secrets.MORNING_PUSH_TIME || '06:30' }}
+          REALTIME_WINDOW: ${{ vars.REALTIME_WINDOW || secrets.REALTIME_WINDOW || '06:00-20:00' }}
+```[span_2](start_span)[span_2](end_span)
+
+> 💡 **Important :** Pour que le script `alerte.js` puisse fonctionner quand `push.yml` s'exécute, assure-toi que le fichier `alerte.js` est bien présent à la racine de ton dépôt[span_3](start_span)[span_3](end_span) et que ton secret `NTFY_TOPIC` est ajouté dans **Settings → Secrets and variables → Actions**[span_4](start_span)[span_4](end_span).
+
+http://googleusercontent.com/lmdx_content/hczySiZrSbgGeQrvfWEIwfLwcwQaXIfitJcpKydywgbrVyEzNbTuJJNexzsszLdwTjwDDnUWTPNLSPeOoxEUdIesCujjgFHPYnUKFIsQSJJOVfrnIzeWADHrEVYCGMrMtuOAjCWQNoMOgESDQMxEGseckYecCyBxRZCggXTbZYEvQUWGDDJoKbJOxJkwCDGmwWDmGcJPjwjbiuWiBlusgRqdBIQOcpTipSqjOzTKFNFfYYyZWxszrlwEDRsdjoRpKLhVriGXBrNLtxVMZhElpFSJnEMPwGtgubaVSUeJoLFIDTRlTXMsXxqHcMxrpikgzKtnzbaiutrKKGbPVMdqwagIkwwLCAZdBrJpPCWbotezPBWqKvCtsJQBqtEIUxsGRStoXNSqElUOURmendJonvafDTkBvTIXvamUylFGXWDoKYCtyImZLEFhISPQyPYkTCn244077
