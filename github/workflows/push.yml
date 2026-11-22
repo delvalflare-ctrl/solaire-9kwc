@@ -1,16 +1,3 @@
-C'est tout à fait normal que l'onglet Actions ou le bouton Run workflow ne fonctionne pas si .github/workflows/push.yml n'est pas encore créé : sans ce fichier, GitHub n'a aucun scénario d'alerte à exécuter. Tu peux le créer directement dans ton navigateur sur Android sans avoir besoin de l'archive ZIP.
- 1. Ouvrir la création d'un nouveau fichier sur GitHub
-   2 min
-   Ouvre la page d'accueil de ton dépôt sur github.com dans Chrome, puis appuie sur Add file → Create new file (ou sur l'icône + près de la liste des fichiers et choisis Create new file).
-   Verification: L'éditeur de fichier s'ouvre avec une zone vide pour le nom du fichier et une zone de texte en dessous.
- 2. Nommer le fichier avec ses dossiers
-   2 min
-   Dans le champ du nom de fichier, tape exactement : .github/workflows/push.yml (en tapant la barre oblique /, GitHub crée automatiquement les dossiers .github puis workflows).
-   Verification: Tu vois apparaître les étiquettes de dossier .github / workflows / devant push.yml.
- 3. Coller le code du workflow et enregistrer
-   2 min
-   Copie le bloc YAML ci-dessous, colle-le dans la grande zone de texte, fais défiler tout en bas et appuie sur le bouton vert Commit changes (puis confirme dans la petite fenêtre qui s'ouvre).
-   Verification: La page affiche le fichier push.yml à l'intérieur de .github/workflows/ sans erreur de syntaxe.
 name: Alertes Solaires Push
 on:
   schedule:
