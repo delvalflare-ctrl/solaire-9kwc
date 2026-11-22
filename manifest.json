@@ -1,0 +1,9 @@
+{
+  "name": "Solaire 9kWc Infoclimat",
+  "short_name": "Solaire 9kWc",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "description": "Prévisions de production photovoltaïque 9 kWc (114° ESE, 45°) basées sur Infoclimat GFS"
+}

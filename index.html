@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="./manifest.json" />
+  <title>Solaire 9kWc • Infoclimat</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --sun: #f59e0b;
+      --sun-glow: rgba(245, 158, 11, 0.2);
+      --green: #10b981;
+      --blue: #38bdf8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 14px; padding-bottom: 48px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 8px; }
+    h1 { font-size: 1.12rem; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .badge { font-size: 0.72rem; background: var(--sun-glow); color: var(--sun); padding: 3px 8px; border-radius: 99px; border: 1px solid var(--sun); }
+    .header-actions { display: flex; gap: 6px; }
+    .btn { background: var(--card); color: var(--text); border: 1px solid var(--card-border); padding: 7px 11px; border-radius: 10px; font-size: 0.82rem; cursor: pointer; font-weight: 600; }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary { background: var(--sun); color: #0f172a; border-color: var(--sun); }
+
+    .grid-top { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+    .grid-top .card { margin-bottom: 0; }
+    .kpi-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi-val { font-size: 1.65rem; font-weight: 800; margin: 4px 0; color: var(--sun); }
+    .kpi-sub { font-size: 0.78rem; color: var(--muted); }
+
+    .alert-box { border-left: 4px solid var(--green); background: linear-gradient(90deg, rgba(16,185,129,0.12), var(--card)); }
+    .alert-title { font-size: 0.9rem; font-weight: 700; color: var(--green); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+    .window-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.88rem; }
+    .window-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .pill-peak { background: rgba(245, 158, 11, 0.18); color: #fbbf24; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tab { flex: 1; padding: 9px; text-align: center; background: var(--card); border: 1px solid var(--card-border); border-radius: 10px; color: var(--muted); font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+    .tab.active { background: var(--sun); color: #0f172a; border-color: var(--sun); }
+
+    .chart-wrap { position: relative; height: 230px; width: 100%; }
+
+    .slot-list { max-height: 290px; overflow-y: auto; margin-top: 10px; }
+    .slot-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+    .slot-row.highlight { background: rgba(245, 158, 11, 0.08); border-radius: 6px; }
+    .bar-bg { flex: 1; height: 8px; background: #0f172a; border-radius: 4px; margin: 0 12px; overflow: hidden; }
+    .bar-fill { height: 100%; background: linear-gradient(90deg, #f59e0b, #fde047); border-radius: 4px; }
+
+    .day-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 4px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .day-row:last-child { border-bottom: none; }
+    .status-bar { font-size: 0.72rem; color: var(--muted); text-align: center; margin-top: 8px; }
+    .ntfy-box { display: flex; gap: 8px; margin-top: 8px; }
+    .ntfy-box input, .settings-grid input { width: 100%; background: #0f172a; border: 1px solid var(--card-border); color: var(--text); padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; }
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .field-group label { display: block; font-size: 0.74rem; color: var(--muted); margin-bottom: 4px; }
+    .hint { font-size: 0.74rem; color: var(--muted); margin-top: 8px; line-height: 1.35; }
+    .saved-msg { font-size: 0.78rem; color: var(--green); font-weight: 600; margin-top: 8px; min-height: 18px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>☀️ Solaire 9 kWc <span class="badge">114° ESE • 45°</span></h1>
+    <div class="header-actions">
+      <button class="btn" onclick="toggleSettings()">⚙️ Réglages</button>
+      <button class="btn" onclick="loadData(true)">↻</button>
+    </div>
+  </header>
+
+  <div class="card" id="settings-panel" style="display:none; border-color: var(--sun);">
+    <div class="kpi-label" style="color:var(--sun);">Réglages des seuils (W) &amp; horaires de push</div>
+    <div class="settings-grid">
+      <div class="field-group">
+        <label for="cfg-win-watts">Seuil fenêtre solaire (W)</label>
+        <input type="number" id="cfg-win-watts" min="50" max="9000" step="50" />
+      </div>
+      <div class="field-group">
+        <label for="cfg-push-watts">Seuil alerte push +30 min (W)</label>
+        <input type="number" id="cfg-push-watts" min="50" max="9000" step="50" />
+      </div>
+      <div class="field-group">
+        <label for="cfg-morning-time">Horaire push bilan (HH:MM)</label>
+        <input type="time" id="cfg-morning-time" />
+      </div>
+      <div class="field-group">
+        <label for="cfg-quiet-range">Plage push temps réel (ex: 06:00-20:00)</label>
+        <input type="text" id="cfg-quiet-range" placeholder="06:00-20:00" />
+      </div>
+    </div>
+    <div class="ntfy-box" style="margin-top:12px;">
+      <button class="btn btn-primary" onclick="saveSettings()">Enregistrer les réglages</button>
+      <button class="btn" onclick="resetSettings()">Réinitialiser</button>
+    </div>
+    <div class="saved-msg" id="settings-feedback"></div>
+    <p class="hint">
+      Ces réglages mettent à jour l'application sur ce téléphone immédiatement. Pour que le robot GitHub Actions utilise les mêmes seuils et horaires en arrière-plan, reporte ces valeurs dans les GitHub Variables / Secrets (<code>PUSH_WATTS</code>, <code>WINDOW_WATTS</code>, <code>MORNING_PUSH_TIME</code>, <code>REALTIME_WINDOW</code>).
+    </p>
+  </div>
+
+  <div class="grid-top">
+    <div class="card">
+      <div class="kpi-label">Production actuelle</div>
+      <div class="kpi-val" id="kpi-now">-- W</div>
+      <div class="kpi-sub" id="kpi-clouds">Nébulosité : --</div>
+    </div>
+    <div class="card">
+      <div class="kpi-label">Estimé aujourd'hui</div>
+      <div class="kpi-val" id="kpi-kwh" style="color: var(--blue);">-- kWh</div>
+      <div class="kpi-sub" id="kpi-peak">Pic : -- W</div>
+    </div>
+  </div>
+
+  <div class="card alert-box">
+    <div class="alert-title">
+      <span id="windows-heading">⚡ Prochaines fenêtres solaires (&gt; 500 W)</span>
+      <span id="alert-badge" style="font-size:0.75rem;">Analyse...</span>
+    </div>
+    <div id="windows-container">Chargement des prévisions...</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-24h" onclick="switchTab('24h')">Vue 24h (pas 30 min)</div>
+    <div class="tab" id="tab-7d" onclick="switchTab('7d')">Vue Semaine (7 jours)</div>
+  </div>
+
+  <div id="view-24h" class="card">
+    <div class="chart-wrap">
+      <canvas id="chart24h"></canvas>
+    </div>
+    <div class="slot-list" id="list-30m"></div>
+  </div>
+
+  <div id="view-7d" class="card" style="display:none;">
+    <div class="chart-wrap">
+      <canvas id="chart7d"></canvas>
+    </div>
+    <div id="list-7d" style="margin-top:12px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="kpi-label">Notification Push Android (ntfy)</div>
+    <div class="ntfy-box">
+      <input type="text" id="ntfy-topic" placeholder="Ex: solaire-maison-9kwc-76" />
+      <button class="btn" onclick="testPush()">Tester Push</button>
+    </div>
+    <div class="status-bar" id="status-msg">Initialisation...</div>
+  </div>
+
+<script>
+const DEFAULTS = {
+  lat: 49.75071,
+  lon: 1.44556,
+  kwp: 9.0,
+  azimuth: 114,
+  tilt: 45,
+  perfRatio: 0.82,
+  thresholdMin: 500,
+  thresholdPush: 800,
+  morningPushTime: "06:30",
+  realtimeWindow: "06:00-20:00",
+  apiUrl: "http://www.infoclimat.fr/public-api/gfs/json?_ll=49.75071,1.44556&_auth=BhwHEA9xVXcALVBnVyFXflY%2BAjdeKFB3AHxVNgltXyIHY1Y3D2xTNlQ6BnsPIFZjUn8DZ1phAD0BZwtqWCpTLwZmB2MPb1U1AGlQNFdmV3xWegJ%2FXmBQdwB8VToJbF8iB2VWNQ9vUy9UOgZgDzlWfFJgA2ZaYQAnAX0LbVgyUzkGYAdgD2RVNQBtUDVXbld8VnoCZF4zUGgAYFU3CTdfPAdjVmEPOFMzVDIGYg84VnxSYwNrWmcAOwFnC2tYPVM5BnoHfA8VVUQAclByVyVXNlYjAn9eNFA2ADc%3D&_c=edd53741b7202607266d3ed621e05e33"
+};
+
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem("solaire_config_v1");
+    return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : { ...DEFAULTS };
+  } catch (e) {
+    return { ...DEFAULTS };
+  }
+}
+
+let CONFIG = loadConfig();
+let lastSlots = null;
+let chart24Instance = null;
+let chart7Instance = null;
+
+function populateSettingsInputs() {
+  document.getElementById("cfg-win-watts").value = CONFIG.thresholdMin;
+  document.getElementById("cfg-push-watts").value = CONFIG.thresholdPush;
+  document.getElementById("cfg-morning-time").value = CONFIG.morningPushTime;
+  document.getElementById("cfg-quiet-range").value = CONFIG.realtimeWindow;
+}
+
+function toggleSettings() {
+  const panel = document.getElementById("settings-panel");
+  const isOpen = panel.style.display !== "none";
+  panel.style.display = isOpen ? "none" : "block";
+  if (!isOpen) populateSettingsInputs();
+}
+
+function saveSettings() {
+  const winWatts = parseInt(document.getElementById("cfg-win-watts").value, 10);
+  const pushWatts = parseInt(document.getElementById("cfg-push-watts").value, 10);
+  const morningTime = document.getElementById("cfg-morning-time").value || "06:30";
+  const quietRange = (document.getElementById("cfg-quiet-range").value || "06:00-20:00").trim();
+
+  if (isNaN(winWatts) || winWatts < 10 || isNaN(pushWatts) || pushWatts < 10) {
+    document.getElementById("settings-feedback").textContent = "Entre des seuils valides en watts (ex: 500 et 800).";
+    return;
+  }
+
+  CONFIG = {
+    ...CONFIG,
+    thresholdMin: winWatts,
+    thresholdPush: pushWatts,
+    morningPushTime: morningTime,
+    realtimeWindow: quietRange
+  };
+  localStorage.setItem("solaire_config_v1", JSON.stringify(CONFIG));
+  document.getElementById("settings-feedback").textContent =
+    `Enregistré : fenêtre ≥ ${winWatts} W • push ≥ ${pushWatts} W • bilan à ${morningTime} (${quietRange}).`;
+  if (lastSlots) renderDashboard(lastSlots);
+}
+
+function resetSettings() {
+  localStorage.removeItem("solaire_config_v1");
+  CONFIG = { ...DEFAULTS };
+  populateSettingsInputs();
+  document.getElementById("settings-feedback").textContent = "Paramètres par défaut restaurés.";
+  if (lastSlots) renderDashboard(lastSlots);
+}
+
+const savedTopic = localStorage.getItem('ntfy_topic');
+if (savedTopic) document.getElementById('ntfy-topic').value = savedTopic;
+
+function switchTab(mode) {
+  document.getElementById('tab-24h').classList.toggle('active', mode === '24h');
+  document.getElementById('tab-7d').classList.toggle('active', mode === '7d');
+  document.getElementById('view-24h').style.display = mode === '24h' ? 'block' : 'none';
+  document.getElementById('view-7d').style.display = mode === '7d' ? 'block' : 'none';
+}
+
+function getSolarPosition(date, lat, lon) {
+  const rad = Math.PI / 180;
+  const start = new Date(date.getFullYear(), 0, 0);
+  const diff = date - start;
+  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hourUTC = date.getUTCHours() + date.getUTCMinutes() / 60;
+
+  const B = (360 / 365) * (dayOfYear - 81) * rad;
+  const decl = 23.45 * Math.sin(B) * rad;
+  const eot = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
+  const solarTime = hourUTC + (lon / 15) + (eot / 60);
+  const hourAngle = (solarTime - 12) * 15 * rad;
+
+  const latRad = lat * rad;
+  const sinElev = Math.sin(latRad) * Math.sin(decl) + Math.cos(latRad) * Math.cos(decl) * Math.cos(hourAngle);
+  const elevRad = Math.asin(Math.max(-1, Math.min(1, sinElev)));
+  const elevDeg = elevRad / rad;
+
+  let cosAz = (Math.sin(decl) - Math.sin(elevRad) * Math.sin(latRad)) / (Math.cos(elevRad) * Math.cos(latRad));
+  cosAz = Math.max(-1, Math.min(1, cosAz));
+  let azDeg = Math.acos(cosAz) / rad;
+  if (hourAngle > 0) azDeg = 360 - azDeg;
+
+  return { elevDeg, elevRad, azDeg, azRad: azDeg * rad };
+}
+
+function estimatePVWatts(date, clouds) {
+  const sun = getSolarPosition(date, CONFIG.lat, CONFIG.lon);
+  if (sun.elevDeg <= 1) return 0;
+
+  const rad = Math.PI / 180;
+  const tiltRad = CONFIG.tilt * rad;
+  const panelAzRad = CONFIG.azimuth * rad;
+
+  const airMass = 1 / (Math.sin(sun.elevRad) + 0.50572 * Math.pow(sun.elevDeg + 6.07995, -1.6364));
+  const dniClear = 1361 * Math.pow(0.7, Math.pow(airMass, 0.678));
+  const dhiClear = 0.12 * dniClear * Math.sin(sun.elevRad);
+
+  const low = (clouds.basse || 0) / 100;
+  const mid = (clouds.moyenne || 0) / 100;
+  const high = (clouds.haute || 0) / 100;
+  const directTransmittance = (1 - 0.78 * low) * (1 - 0.50 * mid) * (1 - 0.18 * high);
+  const diffuseFactor = 1 + 0.35 * (low + mid) * (1 - 0.5 * low);
+
+  const cosTheta = Math.sin(sun.elevRad) * Math.cos(tiltRad) +
+                   Math.cos(sun.elevRad) * Math.sin(tiltRad) * Math.cos(sun.azRad - panelAzRad);
+
+  const poaDirect = Math.max(0, dniClear * directTransmittance * Math.max(0, cosTheta));
+  const poaDiffuse = dhiClear * diffuseFactor * ((1 + Math.cos(tiltRad)) / 2);
+  const totalIrradiance = poaDirect + poaDiffuse;
+
+  const watts = CONFIG.kwp * 1000 * (totalIrradiance / 1000) * CONFIG.perfRatio;
+  return Math.round(Math.min(CONFIG.kwp * 1000, Math.max(0, watts)));
+}
+
+function parseAndInterpolate30Min(rawJson) {
+  const points = [];
+  for (const [key, val] of Object.entries(rawJson)) {
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(key) && val.nebulosite) {
+      const dt = new Date(key.replace(" ", "T") + "Z");
+      points.push({ dt, neb: val.nebulosite, tempC: val.temperature ? (val.temperature["2m"] - 273.15) : null });
+    }
+  }
+  points.sort((a, b) => a.dt - b.dt);
+
+  const slots30m = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const steps = Math.round((p2.dt - p1.dt) / (30 * 60 * 1000));
+    for (let s = 0; s < steps; s++) {
+      const ratio = s / steps;
+      const slotDate = new Date(p1.dt.getTime() + s * 30 * 60 * 1000);
+      const interpNeb = {
+        basse: p1.neb.basse + (p2.neb.basse - p1.neb.basse) * ratio,
+        moyenne: p1.neb.moyenne + (p2.neb.moyenne - p1.neb.moyenne) * ratio,
+        haute: p1.neb.haute + (p2.neb.haute - p1.neb.haute) * ratio,
+        totale: Math.round(p1.neb.totale + (p2.neb.totale - p1.neb.totale) * ratio)
+      };
+      slots30m.push({
+        date: slotDate,
+        watts: estimatePVWatts(slotDate, interpNeb),
+        neb: interpNeb
+      });
+    }
+  }
+  return slots30m;
+}
+
+async function loadData(force = false) {
+  const statusEl = document.getElementById('status-msg');
+  statusEl.textContent = "Récupération Infoclimat en cours...";
+
+  const proxies = [
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    url => url
+  ];
+
+  let data = null;
+  for (const makeUrl of proxies) {
+    try {
+      const res = await fetch(makeUrl(CONFIG.apiUrl), { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.request_state === 200) {
+          data = json;
+          localStorage.setItem('infoclimat_cache', JSON.stringify({ ts: Date.now(), data }));
+          break;
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (!data) {
+    const cached = localStorage.getItem('infoclimat_cache');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      data = parsed.data;
+      statusEl.textContent = "Mode hors-ligne (données en cache du " + new Date(parsed.ts).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) + ")";
+    } else {
+      statusEl.textContent = "Impossible de joindre Infoclimat (vérifie ta connexion).";
+      return;
+    }
+  } else {
+    statusEl.textContent = "Actualisé à " + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) + " • Bilan " + CONFIG.morningPushTime + " • Push ≥ " + CONFIG.thresholdPush + " W";
+  }
+
+  lastSlots = parseAndInterpolate30Min(data);
+  renderDashboard(lastSlots);
+}
+
+function renderDashboard(slots) {
+  const now = new Date();
+  let currentIdx = slots.findIndex(s => s.date >= now);
+  if (currentIdx === -1) currentIdx = 0;
+  const currentSlot = slots[currentIdx];
+
+  document.getElementById('windows-heading').textContent = `⚡ Prochaines fenêtres solaires (≥ ${CONFIG.thresholdMin} W)`;
+  document.getElementById('kpi-now').textContent = currentSlot.watts + " W";
+  document.getElementById('kpi-clouds').textContent = `Nuages : ${currentSlot.neb.totale}% (bas: ${Math.round(currentSlot.neb.basse)}%)`;
+
+  const next24h = slots.slice(currentIdx, currentIdx + 48);
+  const kwh24 = next24h.reduce((acc, s) => acc + (s.watts * 0.5) / 1000, 0);
+  const peak24 = Math.max(...next24h.map(s => s.watts));
+  document.getElementById('kpi-kwh').textContent = kwh24.toFixed(1) + " kWh";
+  document.getElementById('kpi-peak').textContent = `Pic 24h : ${peak24} W`;
+
+  const windows = [];
+  let activeWin = null;
+  for (const s of slots.slice(currentIdx, currentIdx + 96)) {
+    if (s.watts >= CONFIG.thresholdMin) {
+      if (!activeWin) {
+        activeWin = { start: s.date, end: new Date(s.date.getTime() + 30*60000), peak: s.watts, sumWh: s.watts * 0.5 };
+      } else {
+        activeWin.end = new Date(s.date.getTime() + 30*60000);
+        activeWin.peak = Math.max(activeWin.peak, s.watts);
+        activeWin.sumWh += s.watts * 0.5;
+      }
+    } else if (activeWin) {
+      windows.push(activeWin);
+      activeWin = null;
+    }
+  }
+  if (activeWin) windows.push(activeWin);
+
+  const winContainer = document.getElementById('windows-container');
+  document.getElementById('alert-badge').textContent = `${windows.length} créneau(x)`;
+  if (windows.length === 0) {
+    winContainer.innerHTML = `<div style="font-size:0.85rem; color:var(--muted);">Aucun créneau ≥ ${CONFIG.thresholdMin} W prévu dans les 48h.</div>`;
+  } else {
+    winContainer.innerHTML = windows.slice(0, 4).map(w => {
+      const dayLabel = w.start.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
+      const h1 = w.start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const h2 = w.end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      return `
+        <div class="window-item">
+          <div><strong>${dayLabel}</strong> • ${h1} → ${h2} <span style="color:var(--muted);font-size:0.78rem;">(~${(w.sumWh/1000).toFixed(1)} kWh)</span></div>
+          <div class="pill-peak">Pic ${w.peak} W</div>
+        </div>`;
+    }).join('');
+  }
+
+  const list30m = document.getElementById('list-30m');
+  list30m.innerHTML = next24h.filter(s => s.watts > 0 || (s.date.getHours() >= 7 && s.date.getHours() <= 18)).map(s => {
+    const timeStr = s.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const pct = Math.min(100, Math.round((s.watts / 6500) * 100));
+    const isGood = s.watts >= CONFIG.thresholdMin;
+    return `
+      <div class="slot-row ${isGood ? 'highlight' : ''}">
+        <span style="width:46px; font-weight:600;">${timeStr}</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <span style="width:65px; text-align:right; font-weight:700; color:${isGood ? '#fbbf24' : 'var(--muted)'};">${s.watts} W</span>
+      </div>`;
+  }).join('');
+
+  const ctx24 = document.getElementById('chart24h').getContext('2d');
+  if (chart24Instance) chart24Instance.destroy();
+  chart24Instance = new Chart(ctx24, {
+    type: 'line',
+    data: {
+      labels: next24h.map(s => s.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })),
+      datasets: [{
+        label: 'Production estimée (W)',
+        data: next24h.map(s => s.watts),
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.22)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 1.5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8', maxTicksLimit: 8 }, grid: { display: false } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.06)' }, beginAtZero: true }
+      }
+    }
+  });
+
+  const daysMap = new Map();
+  for (const s of slots) {
+    const dayKey = s.date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+    if (!daysMap.has(dayKey)) daysMap.set(dayKey, { label: dayKey, kwh: 0, peak: 0, goodSlots: 0 });
+    const d = daysMap.get(dayKey);
+    d.kwh += (s.watts * 0.5) / 1000;
+    d.peak = Math.max(d.peak, s.watts);
+    if (s.watts >= CONFIG.thresholdMin) d.goodSlots++;
+  }
+  const daysArr = Array.from(daysMap.values()).slice(0, 7);
+
+  document.getElementById('list-7d').innerHTML = daysArr.map(d => `
+    <div class="day-row">
+      <div>
+        <div style="font-weight:700; text-transform:capitalize;">${d.label}</div>
+        <div style="font-size:0.78rem; color:var(--muted);">${(d.goodSlots * 0.5).toFixed(1)}h ≥ ${CONFIG.thresholdMin} W</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-weight:800; color:var(--blue);">${d.kwh.toFixed(1)} kWh</div>
+        <div style="font-size:0.75rem; color:var(--sun);">Pic ${d.peak} W</div>
+      </div>
+    </div>
+  `).join('');
+
+  const ctx7 = document.getElementById('chart7d').getContext('2d');
+  if (chart7Instance) chart7Instance.destroy();
+  chart7Instance = new Chart(ctx7, {
+    type: 'bar',
+    data: {
+      labels: daysArr.map(d => d.label),
+      datasets: [{
+        label: 'kWh / jour',
+        data: daysArr.map(d => Number(d.kwh.toFixed(1))),
+        backgroundColor: '#38bdf8',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.06)' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+async function testPush() {
+  const topic = document.getElementById('ntfy-topic').value.trim();
+  if (!topic) return alert("Entre d'abord ton nom de canal ntfy (ex: solaire-maison-9kwc).");
+  localStorage.setItem('ntfy_topic', topic);
+
+  try {
+    await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
+      method: 'POST',
+      headers: { 'Title': 'Test Alerte Solaire 9 kWc', 'Tags': 'sunny,zap' },
+      body: `Bilan configuré à ${CONFIG.morningPushTime} • Seuil push : ${CONFIG.thresholdPush} W • Fenêtre : ${CONFIG.thresholdMin} W.`
+    });
+    alert("Notification envoyée ! Vérifie ton application ntfy sur Android.");
+  } catch (e) {
+    alert("Erreur lors de l'envoi : " + e.message);
+  }
+}
+
+loadData();
+setInterval(() => loadData(), 30 * 60 * 1000);
+</script>
+</body>
+</html>
