@@ -1,3 +1,5 @@
+const fs = require("fs");
+
 const API_URL = "http://www.infoclimat.fr/public-api/gfs/json?_ll=49.75071,1.44556&_auth=BhwHEA9xVXcALVBnVyFXflY%2BAjdeKFB3AHxVNgltXyIHY1Y3D2xTNlQ6BnsPIFZjUn8DZ1phAD0BZwtqWCpTLwZmB2MPb1U1AGlQNFdmV3xWegJ%2FXmBQdwB8VToJbF8iB2VWNQ9vUy9UOgZgDzlWfFJgA2ZaYQAnAX0LbVgyUzkGYAdgD2RVNQBtUDVXbld8VnoCZF4zUGgAYFU3CTdfPAdjVmEPOFMzVDIGYg84VnxSYwNrWmcAOwFnC2tYPVM5BnoHfA8VVUQAclByVyVXNlYjAn9eNFA2ADc%3D&_c=edd53741b7202607266d3ed621e05e33";
 const NTFY_TOPIC = process.env.NTFY_TOPIC;
 
@@ -71,6 +73,12 @@ async function sendPush(title, message, tags = "sunny") {
 async function run() {
   const res = await fetch(API_URL);
   const raw = await res.json();
+
+  // Sauvegarde le flux brut pour l'application mobile (evite les blocages CORS/HTTP)
+  if (raw && raw.request_state === 200) {
+    fs.writeFileSync("data.json", JSON.stringify({ updated_at: Date.now(), payload: raw }));
+  }
+
   const points = Object.entries(raw)
     .filter(([k, v]) => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(k) && v.nebulosite)
     .map(([k, v]) => ({ dt: new Date(k.replace(" ", "T") + "Z"), neb: v.nebulosite }))
@@ -131,3 +139,4 @@ async function run() {
 }
 
 run();
+        
